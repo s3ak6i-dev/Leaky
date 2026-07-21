@@ -2,9 +2,12 @@ import * as vscode from "vscode";
 import { locateSessionFile } from "./ingestion/sessionLocator";
 import { Tailer } from "./ingestion/tailer";
 import { SessionStats } from "./types";
+import { BurndownPanel } from "./webview/burndownPanel";
 
 let statusBarItem: vscode.StatusBarItem;
 let pollHandle: ReturnType<typeof setInterval> | undefined;
+let latestSessionPath: string | undefined;
+let latestStats: SessionStats | undefined;
 
 const STALE_MS = 10 * 60 * 1000;
 
@@ -66,6 +69,10 @@ export function activate(context: vscode.ExtensionContext) {
       if (stats.turnCount > lastTurnCount) lastActivityAt = Date.now();
       lastTurnCount = stats.turnCount;
       renderLive(sessionPath, stats, lastActivityAt);
+
+      latestSessionPath = sessionPath;
+      latestStats = stats;
+      BurndownPanel.getOpen()?.update(sessionPath, stats);
     };
 
     poll();
@@ -76,7 +83,10 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("leaky.showBurndown", () => {
-      vscode.window.showInformationMessage("Leaky burn-down panel: coming soon.");
+      const panel = BurndownPanel.createOrShow(context.extensionUri);
+      if (latestSessionPath && latestStats) {
+        panel.update(latestSessionPath, latestStats);
+      }
     })
   );
 }
