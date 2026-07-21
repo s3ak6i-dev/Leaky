@@ -1,0 +1,40 @@
+{
+  "name": "leaky",
+  "displayName": "Leaky",
+  "description": "A live profiler for your AI coding agent's token burn.",
+  "version": "0.0.1",
+  "publisher": "leaky",
+  "private": true,
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "leaky.showBurndown",
+        "title": "Leaky: Show Session Burn-down"
+      },
+      {
+        "command": "leaky.selectSessionFile",
+        "title": "Leaky: Select Session File Manually"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -w -p ./",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "calibrate": "tsx scripts/calibrate.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0",
+    "tsx": "^4.16.0"
+  }
+}
