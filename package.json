@@ -21,7 +21,22 @@
         "command": "leaky.selectSessionFile",
         "title": "Leaky: Select Session File Manually"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Leaky",
+      "properties": {
+        "leaky.claudeHome": {
+          "type": "string",
+          "default": "",
+          "description": "Override the Claude home directory (default: ~/.claude)."
+        },
+        "leaky.pollIntervalMs": {
+          "type": "number",
+          "default": 1500,
+          "description": "How often Leaky polls the session file for new lines, in milliseconds."
+        }
+      }
+    }
   },
   "scripts": {
     "compile": "tsc -p ./",
