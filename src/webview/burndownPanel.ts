@@ -3,6 +3,7 @@ import { SessionStats } from "../types";
 import { estimateCostUsd, formatCostUsd } from "../pricing";
 import { buildChartBars } from "./chartData";
 import { getWebviewHtml } from "./html";
+import { visibleFindings } from "../findings";
 
 function nonce(): string {
   let text = "";
@@ -61,6 +62,9 @@ export class BurndownPanel {
     const costUsd = estimateCostUsd(stats);
     const resentPct = stats.totals.total > 0 ? Math.round((stats.totals.cacheRead / stats.totals.total) * 100) : 0;
     const degraded = stats.totalLines > 0 && stats.skippedLines / stats.totalLines > 0.2;
+    const showHypothesisFindings = vscode.workspace
+      .getConfiguration("leaky")
+      .get<boolean>("showHypothesisFindings", false);
 
     this.panel.webview.postMessage({
       type: "update",
@@ -74,6 +78,7 @@ export class BurndownPanel {
       degraded,
       skippedLines: stats.skippedLines,
       totalLines: stats.totalLines,
+      findings: visibleFindings(stats, showHypothesisFindings),
     });
   }
 

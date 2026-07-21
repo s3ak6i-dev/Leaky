@@ -42,9 +42,15 @@ await page.waitForTimeout(300);
 const headlineText = await page.locator("#headline").innerText();
 const canvasSize = await page.locator("#chart").evaluate((el) => ({ w: el.width, h: el.height }));
 const sourceLine = await page.locator("#source-line").innerText();
+const leaksCountBefore = await page.locator("#leaks-count").innerText();
 
 const shotPath = path.join(root, "scripts/.smoketest-screenshot.png");
 await page.screenshot({ path: shotPath });
+
+// Verify the dismiss button actually removes the card (UISpec §6).
+await page.locator(".dismiss-btn").first().click();
+const leaksCountAfter = await page.locator("#leaks-count").innerText();
+const emptyStateShown = (await page.locator(".leaks-empty").count()) > 0;
 
 await browser.close();
 
@@ -53,6 +59,7 @@ console.log("console/page errors:", consoleErrors.length ? consoleErrors : "none
 console.log("headline text:\n" + headlineText);
 console.log("canvas size:", canvasSize);
 console.log("source line:", sourceLine);
+console.log("leaks count before/after dismiss:", leaksCountBefore, "/", leaksCountAfter, "empty state shown:", emptyStateShown);
 console.log("screenshot:", shotPath);
 
 fs.rmSync(path.join(root, "scripts/.smoketest-payload.json"), { force: true });
@@ -61,5 +68,9 @@ fs.rmSync(path.join(root, "scripts/.smoketest-html.html"), { force: true });
 if (consoleErrors.length > 0) process.exit(1);
 if (canvasSize.w < 10 || canvasSize.h < 10) {
   console.error("canvas did not render (too small)");
+  process.exit(1);
+}
+if (leaksCountBefore === leaksCountAfter || !emptyStateShown) {
+  console.error("dismiss did not remove the finding card");
   process.exit(1);
 }

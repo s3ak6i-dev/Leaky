@@ -48,6 +48,59 @@ export function getWebviewHtml(nonce: string, cspSource: string): string {
   #chart { display: block; }
   .legend { display: flex; gap: 16px; margin-top: 8px; font-size: 11px; }
   .legend .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; }
+
+  .leaks-section { margin-top: 28px; }
+  .leaks-header {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .leaks-count-badge {
+    background: var(--vscode-badge-background);
+    color: var(--vscode-badge-foreground);
+    border-radius: 10px;
+    padding: 0 6px;
+    font-size: 10px;
+  }
+  .leaks-empty { opacity: 0.6; font-size: 12px; }
+  .finding-card {
+    border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.3));
+    border-radius: 4px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .finding-card-top { display: flex; align-items: center; gap: 8px; }
+  .severity-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .severity-dot.info { background: var(--vscode-descriptionForeground, #888); }
+  .severity-dot.warn { border: 2px solid #E0A336; background: transparent; }
+  .severity-dot.high { background: #E0A336; }
+  .finding-title { font-weight: 600; font-size: 13px; flex: 1; }
+  .confidence-badge {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    opacity: 0.7;
+    border: 1px solid currentColor;
+    border-radius: 3px;
+    padding: 1px 5px;
+  }
+  .dismiss-btn {
+    background: none;
+    border: none;
+    color: var(--vscode-foreground);
+    opacity: 0.6;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 2px;
+  }
+  .dismiss-btn:hover { opacity: 1; }
+  .finding-detail { font-size: 12px; opacity: 0.85; margin-top: 4px; }
+  .finding-recommendation { font-size: 12px; color: #E0A336; margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -64,6 +117,14 @@ export function getWebviewHtml(nonce: string, cspSource: string): string {
     </div>
   </div>
   <div id="empty-state" class="empty-state" style="display:none;">Waiting on session activity…</div>
+
+  <div class="leaks-section">
+    <div class="leaks-header">
+      <span>LEAKS</span>
+      <span class="leaks-count-badge" id="leaks-count">0</span>
+    </div>
+    <div id="leaks-list"></div>
+  </div>
 
 <script nonce="${nonce}">
   const vscode = acquireVsCodeApi();
@@ -135,6 +196,68 @@ export function getWebviewHtml(nonce: string, cspSource: string): string {
     });
   }
 
+  // Dismiss is per-session and in-memory only (UISpec §6): a dismissed
+  // finding stays hidden across re-renders driven by live poll updates,
+  // but resets if the panel is closed and reopened (persistence is v0.3).
+  const dismissedIds = new Set();
+
+  function renderFindings(findings) {
+    const list = document.getElementById("leaks-list");
+    const countBadge = document.getElementById("leaks-count");
+    const visible = findings.filter((f) => !dismissedIds.has(f.id));
+
+    countBadge.textContent = String(visible.length);
+    list.innerHTML = "";
+
+    if (visible.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "leaks-empty";
+      empty.textContent = "No leaks detected yet — totals above are the whole story so far.";
+      list.appendChild(empty);
+      return;
+    }
+
+    for (const finding of visible) {
+      const card = document.createElement("div");
+      card.className = "finding-card";
+
+      const top = document.createElement("div");
+      top.className = "finding-card-top";
+
+      const dot = document.createElement("span");
+      dot.className = "severity-dot " + finding.severity;
+
+      const title = document.createElement("span");
+      title.className = "finding-title";
+      title.textContent = finding.title;
+
+      const confidence = document.createElement("span");
+      confidence.className = "confidence-badge";
+      confidence.textContent = finding.confidence;
+
+      const dismissBtn = document.createElement("button");
+      dismissBtn.className = "dismiss-btn";
+      dismissBtn.textContent = "×";
+      dismissBtn.addEventListener("click", () => {
+        dismissedIds.add(finding.id);
+        renderFindings(findings);
+      });
+
+      top.append(dot, title, confidence, dismissBtn);
+
+      const detail = document.createElement("div");
+      detail.className = "finding-detail";
+      detail.textContent = finding.detail;
+
+      const recommendation = document.createElement("div");
+      recommendation.className = "finding-recommendation";
+      recommendation.textContent = finding.recommendation;
+
+      card.append(top, detail, recommendation);
+      list.appendChild(card);
+    }
+  }
+
   function render(data) {
     document.getElementById("source-line").textContent = data.sessionPath;
 
@@ -149,6 +272,7 @@ export function getWebviewHtml(nonce: string, cspSource: string): string {
 
     renderHeadline(data);
     renderChart(data.bars);
+    renderFindings(data.findings || []);
   }
 
   window.addEventListener("message", (event) => {

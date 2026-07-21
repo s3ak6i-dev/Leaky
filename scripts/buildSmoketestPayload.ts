@@ -2,12 +2,27 @@ import { parseSession } from "../src/ingestion/parser";
 import { estimateCostUsd, formatCostUsd } from "../src/pricing";
 import { buildChartBars } from "../src/webview/chartData";
 import { getWebviewHtml } from "../src/webview/html";
+import { findW2RepeatedReads } from "../src/findings/w2RepeatedReads";
 import * as fs from "fs";
 
 const text = fs.readFileSync("fixtures/real/session-klados.jsonl", "utf-8");
 const stats = parseSession(text);
 const costUsd = estimateCostUsd(stats);
 const resentPct = Math.round((stats.totals.cacheRead / stats.totals.total) * 100);
+
+// fixtures/real/ has tool_use targets redacted for privacy (see
+// scripts/sanitizeFixture.js), so W2 can never fire against them. Splice in
+// a synthetic repeated-read turn just for this render check.
+stats.turns.push(
+  ...Array.from({ length: 5 }, (_, i) => ({
+    id: `synthetic-${i}`,
+    timestamp: "",
+    model: "claude-sonnet-5",
+    usage: { input: 0, cacheCreate: 0, cacheRead: 0, output: 0 },
+    toolCalls: [{ name: "Read", target: "src/config.ts" }],
+  }))
+);
+
 const payload = {
   type: "update",
   sessionPath: "fixtures/real/session-klados.jsonl",
@@ -20,6 +35,7 @@ const payload = {
   degraded: false,
   skippedLines: stats.skippedLines,
   totalLines: stats.totalLines,
+  findings: findW2RepeatedReads(stats),
 };
 fs.writeFileSync("scripts/.smoketest-payload.json", JSON.stringify(payload));
 fs.writeFileSync("scripts/.smoketest-html.html", getWebviewHtml("testnonce", "'self'"));

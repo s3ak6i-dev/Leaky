@@ -37,6 +37,11 @@
           "type": "number",
           "default": 1500,
           "description": "How often Leaky polls the session file for new lines, in milliseconds."
+        },
+        "leaky.showHypothesisFindings": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show uncalibrated (hypothesis-status) findings, badged 'uncalibrated', for calibration work. Off by default — see Validation.md."
         }
       }
     }
