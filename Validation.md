@@ -67,6 +67,8 @@ A validated finding reverts to `hypothesis` if: (a) the parser's schema handling
 
 **V-B: compaction detectability (blocks W6).** Inventory the corpus for any line type/field that marks compaction. W6 unblocks only if compaction is identifiable with zero false positives on the corpus; otherwise W6 is CUT until the log format provides it.
 
+> **Update 2026-07-21 — resolved, zero false positives observed.** Real session logs contain an unambiguous marker: `{"type":"system","subtype":"compact_boundary","compactMetadata":{"trigger":"auto","preTokens":N,"durationMs":N,...}}`. Checked across 3 real sessions (klados: 0 occurrences, Locus: 14 occurrences, Leaky: 0 occurrences) — every hit was a genuine compaction event, no false positives from unrelated content. This unblocks W6 pending the calibration run itself, and also means W4's "turns without a context reset" trigger (currently approximated by raw turnCount — see `src/findings/thresholds.ts`) can be implemented properly against real reset points as a fast-follow. `scripts/calibrate.ts` now extracts `compaction_events_detected` using this marker.
+
 **V-C: does cache_read_share separate at all (the core question).** If no threshold on cache_read_share meets the criterion, W1 is redesigned around whichever corpus signal *does* separate — and the PRD's hero framing is revisited in the same PR. The product does not keep a flagship story its own data contradicts.
 
 ## Calibration records

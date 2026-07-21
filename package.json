@@ -52,6 +52,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "calibrate": "tsx scripts/calibrate.ts",
+    "labeling-sheet": "tsx scripts/generateLabelingSheet.ts",
     "smoketest:webview": "node scripts/smoketestWebview.mjs"
   },
   "devDependencies": {
