@@ -2,7 +2,7 @@ import { parseSession } from "../src/ingestion/parser";
 import { estimateCostUsd, formatCostUsd } from "../src/pricing";
 import { buildChartBars } from "../src/webview/chartData";
 import { getWebviewHtml } from "../src/webview/html";
-import { findW2RepeatedReads } from "../src/findings/w2RepeatedReads";
+import { visibleFindings } from "../src/findings";
 import * as fs from "fs";
 
 const text = fs.readFileSync("fixtures/real/session-klados.jsonl", "utf-8");
@@ -35,7 +35,7 @@ const payload = {
   degraded: false,
   skippedLines: stats.skippedLines,
   totalLines: stats.totalLines,
-  findings: findW2RepeatedReads(stats),
+  findings: visibleFindings(stats, true), // showHypothesisFindings=true, so this render check sees everything
 };
 fs.writeFileSync("scripts/.smoketest-payload.json", JSON.stringify(payload));
 fs.writeFileSync("scripts/.smoketest-html.html", getWebviewHtml("testnonce", "'self'"));

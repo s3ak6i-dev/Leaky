@@ -70,7 +70,11 @@ if (canvasSize.w < 10 || canvasSize.h < 10) {
   console.error("canvas did not render (too small)");
   process.exit(1);
 }
-if (leaksCountBefore === leaksCountAfter || !emptyStateShown) {
-  console.error("dismiss did not remove the finding card");
+if (Number(leaksCountAfter) !== Number(leaksCountBefore) - 1) {
+  console.error("dismiss did not remove exactly one finding card");
+  process.exit(1);
+}
+if (leaksCountAfter === "0" && !emptyStateShown) {
+  console.error("count hit zero but empty state wasn't shown");
   process.exit(1);
 }
