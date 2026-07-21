@@ -30,3 +30,50 @@ export function toCsvRow(values: (string | number)[]): string {
     })
     .join(",");
 }
+
+/** Parses a CSV written by toCsvRow (handles quoted fields with embedded commas/quotes). Returns rows of raw string cells, header included. */
+export function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"' && text[i + 1] === '"') {
+        field += '"';
+        i++;
+      } else if (c === '"') {
+        inQuotes = false;
+      } else {
+        field += c;
+      }
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === ",") {
+      row.push(field);
+      field = "";
+    } else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(field);
+      field = "";
+      if (row.length > 1 || row[0] !== "") rows.push(row);
+      row = [];
+    } else {
+      field += c;
+    }
+  }
+  if (field !== "" || row.length > 0) {
+    row.push(field);
+    if (row.length > 1 || row[0] !== "") rows.push(row);
+  }
+  return rows;
+}
+
+/** Parses a CSV into an array of objects keyed by its header row. */
+export function parseCsvObjects(text: string): Record<string, string>[] {
+  const rows = parseCsv(text);
+  const [header, ...rest] = rows;
+  return rest.map((row) => Object.fromEntries(header.map((key, i) => [key, row[i] ?? ""])));
+}
